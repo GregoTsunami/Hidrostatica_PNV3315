@@ -33,8 +33,8 @@ def splcubic(x,y, x_val):
     #[A]*[C] = [B]
     #A=
     #   | 1         0               0               0   |               | c |               |                     0                     |
-    #   | h0    2(hk-1 + hk)          hk            0   |       *       | c |       =       |    3/hk (ak+1 - ak) - 3/hk-1 (ak - ak-1)  |
-    #   | 0         h1          2(hk + hk+1)      hk+1  |               | c |               | 3/hk+! (ak+2 - ak+1) - 3/hk+1 (ak+1 - ak) |
+    #   | hk-1    2(hk-1 + hk)      hk              0   |       *       | c |       =       |    3/hk (ak+1 - ak) - 3/hk-1 (ak - ak-1)  |
+    #   | 0         hk          2(hk + hk+1)      hk+1  |               | c |               | 3/hk+! (ak+2 - ak+1) - 3/hk+1 (ak+1 - ak) |
     #   | 0         0               0               1   |               | c |               |                     0                     |
 
     A = [ [1] + [0]*(n-1)]

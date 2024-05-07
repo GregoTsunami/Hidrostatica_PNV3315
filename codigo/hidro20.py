@@ -18,8 +18,8 @@ x = vetX.values.flatten() #pega as balizas e joga os valores num vetor
 vetZ = pd.read_excel('Dunkerque.xlsx', sheet_name='BxWL', header=None)
 z = vetZ.iloc[0].drop(vetZ.columns[0]).values.flatten()
 
-
-def splcubic(x,y):
+#caso eu queria ler um valor especifico de x ou z:
+def splcubic(x,y, x_val):
     #lê o tamanho do vetor X
     n = len(x)
 
@@ -86,7 +86,21 @@ def splcubic(x,y):
         eq = f'{a[k]}{b[k]:+}*(x-{x[k]}){c[k]:+}*(x-{x[k]})**2{d[k]:+}*(x-{x[k]})**3'
         vetS.append(eq)
         
-    return S
+        
+    interval = None
+    for k in range(n-1):
+        if x[k] <= x_val <= x[k+1]:
+            interval = k
+            break
+
+    if interval is None:
+        return None  # Valor de x fora do intervalo de dados
+
+    # Calculando o valor de Y para x_val
+    sol = f'{a[interval]}{b[interval]:+}*(x_val-{x[interval]}){c[interval]:+}*(x_val-{x[interval]})**2{d[interval]:+}*(x_val-{x[interval]})**3'
+    y_val = eval(sol)
+        
+    return y_val
 
 
 #pega todas as meia-bocas de todas WL
@@ -96,8 +110,11 @@ for k in range(0, 9):
     print("\nPara linha d'agua: ", wl)
     print("\nBaliza:", x)
     print("\nMeia-Boca:", y)
-    result = splcubic(x,y)
-    S_valores = splcubic(x,y)
+    x0 = 10
+    y0 = splcubic(x,y,x0)
+    print(f'O valor de y para x= {x0} é {y0}')
+    result = splcubic(x,y, x0)
+    S_valores = splcubic(x,y,x0)
 plt.ylim(-1, 18)
 plt.gca().set_aspect(20/8, adjustable='box')
 plt.grid()
@@ -113,9 +130,12 @@ for k in range(0,20):
     print("\nPara baliza: ", bl)
     print("\nLinha D'agua:", z)
     print("\nMeia-boca:", y)
-    result = splcubic(z,y)
-    S_valores = splcubic(z,y)
-plt.ylim(-1, 1)
+    z0 = 8
+    y0 = splcubic(z,y,z0)
+    print(f'O valor de y para z= {z0} é {y0}')
+    result = splcubic(z,y, z0)
+    S_valores = splcubic(z,y, z0)
+plt.ylim(-1, 16)
 plt.gca().set_aspect(9/16, adjustable='box')
 plt.grid()
 plt.xlabel('WL')

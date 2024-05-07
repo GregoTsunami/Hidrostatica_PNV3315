@@ -81,14 +81,24 @@ def splcubic(x,y):
         t = np.linspace(*value['domain'], 100)
         plt.plot(t, p(t), label=f"$S_{key}(x)$")
     
+    #armazena e guarda as equações splines
     vetS = []
     for k in range(n-1):
         eq = f'{a[k]}{b[k]:+}*(x-{x[k]}){c[k]:+}*(x-{x[k]})**2{d[k]:+}*(x-{x[k]})**3'
         vetS.append(eq)
-        
-    return S
+    
+    #pega os pontos intermediários das splines (0,5)
+    points = []
+    for k in range(n-1):
+        eq = f'{a[k]}{b[k]:+}*(x-{x[k]}){c[k]:+}*(x-{x[k]})**2{d[k]:+}*(x-{x[k]})**3'
+        mid_x = (x[k] + x[k+1]) / 2
+        z_val = eval(eq.replace('x', str(mid_x)))
+        points.append([mid_x, a[k], z_val])
+    
+    return points
 
-
+#Placeholder pra coletar todos os pontos
+all_points = []
 #pega todas as meia-bocas de todas WL
 for k in range(0, 9):
     wl = k
@@ -96,8 +106,13 @@ for k in range(0, 9):
     print("\nPara linha d'agua: ", wl)
     print("\nBaliza:", x)
     print("\nMeia-Boca:", y)
-    result = splcubic(x,y)
-    S_valores = splcubic(x,y)
+    points = splcubic(x, y)
+    all_points.extend(points)
+    # x0 = 10
+    # y0 = splcubic(x,y,x0)
+    # print(f'O valor de y para x= {x0} é {y0}')
+    # result = splcubic(x,y)
+    # S_valores = splcubic(x,y)
 plt.ylim(-1, 18)
 plt.gca().set_aspect(20/8, adjustable='box')
 plt.grid()
@@ -113,12 +128,21 @@ for k in range(0,20):
     print("\nPara baliza: ", bl)
     print("\nLinha D'agua:", z)
     print("\nMeia-boca:", y)
-    result = splcubic(z,y)
-    S_valores = splcubic(z,y)
-plt.ylim(-1, 1)
+    points = splcubic(z, y)
+    all_points.extend(points)
+    # z0 = 8
+    # y0 = splcubic(z,y,z0)
+    # print(f'O valor de y para z= {z0} é {y0}')
+    # result = splcubic(z,y)
+    # S_valores = splcubic(z,y)
+plt.ylim(-1, 16)
 plt.gca().set_aspect(9/16, adjustable='box')
 plt.grid()
 plt.xlabel('WL')
 plt.ylabel('Meia-boca')
 plt.show()
 print()
+
+#Pontos intermediários
+for point in all_points:
+    print(f"X: {point[0]}, Y: {point[1]}, Z: {point[2]}")

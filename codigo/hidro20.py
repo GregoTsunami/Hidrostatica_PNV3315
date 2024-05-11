@@ -18,49 +18,60 @@ x = vetX.values.flatten() #pega as balizas e joga os valores num vetor
 vetZ = pd.read_excel('Dunkerque.xlsx', sheet_name='BxWL', header=None)
 wl = vetZ.iloc[0].drop(vetZ.columns[0]).values.flatten()
 ######################
-pontos = []
+pontos = [1]
 x_spl = []
 z_spl = []
-y_spl_all = []
 #####################################################
+#interpola os pontos de Z de acordo com o que o úsuario digita
 def spline_z(splines):
     zi = []
-    for i in range (0,(8*splines)+1):
-        zi.append(i*((wl[2]-wl[1])/splines))
+    if splines == 0:
+        zi = wl
+    else:
+        for i in range (0,(8*splines)+1):
+            zi.append(i*((wl[2]-wl[1])/splines))
     return zi
 
 #####################################################
+#interpola os pontos de X de acordo com o que o úsuario digita
 def spline_x(splines):
     xi = []
-    for i in range (0, (20*splines)+1):
-        xi.append(i*((x[2]-x[1])/splines))
+    if splines == 0:
+        xi = x
+    else:
+        for i in range (0, (20*splines)+1):
+            xi.append(i*((x[2]-x[1])/splines))
     return xi
 
 ######################################################
-def plot_wlxbal(x,y):
+def grafico_X_Y():
+    for k in range(0,len(wl)):
+        y = ct[k].values #une os dados num vetor)
+        y_spl = splcubic(x,y, x_spl)
+        plot_wlxbal(x_spl,y_spl, k)
+def plot_wlxbal(x,y, k):
     plt.scatter(x,y)
     plt.plot(x,y)
-    plt.ylim(-1, 18)
-    plt.gca().set_aspect(20/8, adjustable='box')
-    plt.grid()
-    plt.xlabel('Baliza')
-    plt.ylabel('Meia-boca')
-    if z_spl[n] == z_spl[-1]:
-      plt.show()
-
+    if wl[k] == wl[-1]:
+        plt.ylim(-1, 17)
+        plt.gca().set_aspect(20/8, adjustable='box')
+        plt.grid()
+        plt.xlabel('Baliza')
+        plt.ylabel('Meia-boca')
+        plt.show()
 ########################################
-def plot_calxwl(z,y):
-    plt.xlim(-17, 17)
-    #plt.gca().set_aspect('auto')
-    plt.grid()
-    plt.xlabel('Meia-boca')
-    plt.ylabel('Calado')
-    if x[n] > (x[-1])/2:
+def grafico_Z_Y():
+    for k in range(0,len(x)):
+        y = ct.iloc[k].drop(ct.columns[0]).values.flatten()
+        y_spl = splcubic(wl,y, z_spl)
+        plot_calxwl(z_spl,y_spl, k)
+def plot_calxwl(z,y, k):
+    if x[k] > (x[-1])/2:
         for i in range (0,len(y)):
             y[i] = y[i]*-1
         plt.scatter(y,z)
         plt.plot(y,z)
-    elif x[n] == (x[-1])/2:
+    elif x[k] == (x[-1])/2:
         plt.scatter(y,z, color='#edca7f')
         plt.plot(y,z, color='#edca7f')
         for i in range (0,len(y)):
@@ -70,19 +81,17 @@ def plot_calxwl(z,y):
     else:
         plt.scatter(y,z)
         plt.plot(y,z)
-    if x[n] == x[-1]:
-      plt.show()
+    if x[k] == x[-1]:
+        plt.xlim(-16, 16)
+        #plt.gca().set_aspect('auto')
+        plt.xlabel('Meia-boca')
+        plt.ylabel('Calado')
+        plt.grid()
+        plt.show()
 ###########################################
-def pop(pontos):
-    guarda = pontos
-    n = len(pontos)
-    for i in range (0, len(guarda)):
-        if pontos [i] == guarda [i]:
-            del guarda [i]
-            print('pop')
-
+#################################################
 ##################################################
-
+#converte o sistema de coordenadas
 def conversao(pontos):
     for i in range (0, len(pontos)):
         pontos[i][0] = pontos [i][0] - (x_spl[-1]/2)
@@ -95,14 +104,18 @@ def paineis(pontos):
         for j in range (0, len(pontos)):
             if guarda2 [i] > pontos[j][i]:
                 guarda2 = pontos[j]
-
     for k in range (0, len(pontos)):
         if pontos[k][0] == guarda2 [0] and pontos[k][2] == (guarda2[2]+z_spl[1]):
             guarda1 = pontos[k]
-
-        if pontos[k][0] == guarda2 [0] and pontos[k][2] == (guarda2[2]+z_spl[1]):
+    for k in range (0, len(pontos)):
+        if pontos[k][0] == (guarda1 [0]+x_spl[1]) and pontos[k][2] == (guarda1[2]):
             guarda4 = pontos[k]
+    for k in range (0, len(pontos)):
+        if pontos[k][0] == (guarda4 [0]) and pontos[k][2] == (guarda2[2]):
+            guarda3 = pontos[k]
+    paineis = [guarda1, guarda2, guarda3, guarda4]
 
+    return paineis
 ###################################################
 def organiza(pontos):
     bckp_pontos = pontos.copy()
@@ -228,6 +241,22 @@ def splcubic(x,y,x_spl):
 
     return y_spl
 
+##############################################
+def areaPainel(pain):
+    print('seu painel ta ai: ', pain)
+    v1 = pain[0]
+    v2 = pain[1]
+    v3 = pain[2]
+    v4 = pain[3]
+    #faz a multiplicação vetorial
+    mv1 = np.cross(v1, v2)
+    mv2 = np.cross(v3, v4)
+    #calculo do vetor área
+    area = (mv1 + mv2)/2
+    #tira o módulo da área
+    modArea = np.linalg.norm(area)
+    print('Area do painel: ', area, 'Módulo da Area: ', modArea)
+    return area, modArea
 
 #####################################################
 splines = int(input("digite o valor de pontos entre balizas desejado: "))
@@ -235,44 +264,29 @@ print("\nx:", x)
 x_spl = np.array(spline_x(splines))
 z_spl = np.array(spline_z(splines))
 n = 0
-
+m = 0
 #pega todas as meia-bocas de todas Balizas interpoladas
-for k in np.arange(0, len(z_spl), z_spl[1]):
-    if n == len(wl):
-        n = 0
+for k in np.arange(0, z_spl[-1]+(z_spl[1]/2), z_spl[1]):
     y = ct[n].values #une os dados num vetor
     print("\ny:", y)
     print("\nPara linha d'agua: ", k)
     y_spl = splcubic(x,y, x_spl)
-    print(y_spl)
-    #plot_wlxbal(x_spl,y_spl)
-    #plot_calxwl(z_spl,y_spl)
-    for i in range(0, min(len(x_spl), len(y_spl), len(z_spl))):
-        if n < len(pontos):
-            if [x_spl[i], y_spl[i], z_spl[n]] != pontos[n]:
-                pontos.append([x_spl[i], y_spl[i], z_spl[n]])
-            n += 1
+    print('\ny_spl', y_spl)
+    for i in range(0, len(x_spl)):
+        if [x_spl[i],y_spl[i],z_spl[m]] != pontos[i]:
+            pontos.append([x_spl[i],y_spl[i],z_spl[m]])
+    n += 1
+    m += 1
+    if n == len(wl):
+        n = 0
+    if m ==len(z_spl):
+        m = 0
+print('\nx_spl', x_spl)
 
-'''
-#pega todas as meias-bocas de todas WL interpoladas
-for k in range(0,len(x)):
-    bl = k
-    y = ct.iloc[k].drop(ct.columns[0]).values.flatten()
-    y_spl = splcubic(wl,y, z_spl)
-    #print("\nBaliza: ", k)
-    #print(y_spl)
-    j = 0
-    for i in range(0, len(z_spl)):
-        if z_spl[i] != wl[j]:
-            pontos.append([float(x[k]),y_spl[i],z_spl[i]])
-        else:
-            j += 1
-    plot_calxwl(z_spl,y_spl)
-'''
-pontos.sort()
+pontos.pop(0)
+grafico_X_Y()
+grafico_Z_Y()
 conversao(pontos)
-#pop(pontos)
-paineis(pontos)
-
-#pontos = organiza(pontos)
-#print('pontos:', pontos)
+pain = paineis(pontos)
+# print('paineis:', pain)
+areaPainel(pain)

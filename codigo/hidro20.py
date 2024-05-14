@@ -242,51 +242,152 @@ def splcubic(x,y,x_spl):
     return y_spl
 
 ##############################################
-def areaPainel(pain):
-    print('seu painel ta ai: ', pain)
-    v1 = pain[0]
-    v2 = pain[1]
-    v3 = pain[2]
-    v4 = pain[3]
+def areaPainel(pain): #calcula area dos paineis e seu modulo
+    # print('seu painel e os pontos são: ', pain)
+    p1 = pain[0]
+    p2 = pain[1]
+    p3 = pain[2]
+    p4 = pain[3]
+
+    v1 = np.array(p2) - np.array(p1)
+    v2 = np.array(p4) - np.array(p1)
+    v3 = np.array(p4) - np.array(p3)
+    v4 = np.array(p2) - np.array(p3)
     #faz a multiplicação vetorial
     mv1 = np.cross(v1, v2)
     mv2 = np.cross(v3, v4)
     #calculo do vetor área
     area = (mv1 + mv2)/2
+    print('Area do painel: ', area)
+    return area
+
+def modPainel(area):
     #tira o módulo da área
     modArea = np.linalg.norm(area)
-    print('Area do painel: ', area, 'Módulo da Area: ', modArea)
-    return area, modArea
+    print('Módulo da Area: ', modArea)
+    return modArea
+
+def Sw(modArea):
+    sw = modArea
+    print('Sw = ', sw)
+    return sw 
+
+def Awl(area):
+    awl = -1*area[2]
+    print('Awl = ', awl)
+    return awl
+
+def Centros(pain):
+    Cx1, Cy1, Cz1 = pain[0]
+    Cx2, Cy2, Cz2 = pain[2]
+    
+    Cx = (Cx1+Cx2)/2
+    Cy = (Cy1+Cy2)/2
+    Cz = (Cz1+Cz2)/2
+    centro = [Cx, Cy, Cz]
+    print('Coord do Centro do painel: ', centro)
+    return centro
+
+def Vol(area, centro):
+    vol = abs(((area[0]*centro[0])+(area[1]*centro[1])+(area[2]*centro[2]))/3)
+    print('Volume dá: ', vol)
+    return vol
+
+def LCF(awl, centro):
+    lcf = (awl*centro[0])/awl
+    print('LCF = ', lcf)
+    return lcf
+
+def TCF(awl, centro):
+    tcf = (awl*centro[1])/awl
+    print('TCF = ', tcf)
+    return tcf
+
+def IL(awl, centro, tcf):
+    il = (awl*(centro[0]-tcf)**2)
+    print('IL = ', il)
+    return il
+
+def IT(awl, centro, lcf):
+    it = (awl*(centro[1]-lcf)**2)
+    print('IT = ', it)
+    return it
+
+def LCB(area, centro, volume):
+    lcb = ((area[0]*centro[0])*(centro[0]/2))/volume
+    print('LCB = ', lcb)
+    return lcb
+
+def TCB(area, centro, volume):
+    tcb = ((area[1]*centro[1])*(centro[1]/2))/volume
+    print('TCB = ', tcb)
+    return tcb
+
+def KB(area, centro, volume):
+    kb = ((area[2]*centro[2])*(centro[2]/2))/volume
+    print('KB = ', kb)
+    return kb
+
+def BML(il, volume):
+    bml = (il/volume)
+    print('BML = ', bml)
+    return bml
+
+def BMT(it, volume):
+    bmt = (it/volume)
+    print('BMT = ', bmt)
+    return bmt
 
 #####################################################
 splines = int(input("digite o valor de pontos entre balizas desejado: "))
 print("\nx:", x)
 x_spl = np.array(spline_x(splines))
 z_spl = np.array(spline_z(splines))
-n = 0
-m = 0
 #pega todas as meia-bocas de todas Balizas interpoladas
-for k in np.arange(0, z_spl[-1]+(z_spl[1]/2), z_spl[1]):
-    y = ct[n].values #une os dados num vetor
-    print("\ny:", y)
-    print("\nPara linha d'agua: ", k)
-    y_spl = splcubic(x,y, x_spl)
-    print('\ny_spl', y_spl)
-    for i in range(0, len(x_spl)):
-        if [x_spl[i],y_spl[i],z_spl[m]] != pontos[i]:
-            pontos.append([x_spl[i],y_spl[i],z_spl[m]])
-    n += 1
-    m += 1
-    if n == len(wl):
-        n = 0
-    if m ==len(z_spl):
-        m = 0
-print('\nx_spl', x_spl)
+for z in z_spl:
+    n = 0
+    m = 0
+    pontos = []
+    for k in np.arange(0, z_spl[-1]+(z_spl[1]/2), z_spl[1]):
+        y = ct[n].values #une os dados num vetor
+        print("\ny:", y)
+        print("\nPara linha d'agua: ", k)
+        y_spl = splcubic(x,y, x_spl)
+        print('\ny_spl', y_spl)
+        for i in range(0, len(x_spl)):
+            # if [x_spl[i], y_spl[i], z] != pontos[i]:
+            # pontos.append([x_spl[i], y_spl[i], z])
+            novo_ponto = [x_spl[i], y_spl[i], z_spl[m]]  # Criar novo ponto
+            if novo_ponto not in pontos:  # Verificar se o ponto já existe
+                pontos.append(novo_ponto)  # Adicionar o ponto se não existir
+        n += 1
+        m += 1
+        if n == len(wl):
+            n = 0
+        if m ==len(z_spl):
+            m = 0
+    print('\nx_spl', x_spl)
+    #pontos.pop(0)    
+    conversao(pontos)
+    pain = paineis(pontos)
+    print('Coords do painel', pain)
+    # area = areaPainel(pain)
+    # modArea = modPainel(area)
+    # centro = Centros(pain)
+    # volume = Vol(area, centro)
+    # sw = Sw(area)
+    # awl = Awl(area)
+    # lcf = LCF(awl, centro)
+    # tcf = TCF(awl, centro)
+    # il = IL(awl, centro, tcf)
+    # it = IT(awl, centro, lcf)
+    # lcb = LCB(area, centro, volume)
+    # tcb = TCB(area, centro, volume)
+    # kb = KB(area, centro, volume)
+    # bml = BML(il, volume)
+    # bmt = BMT(it, volume)
+    
+    
 
-pontos.pop(0)
-grafico_X_Y()
-grafico_Z_Y()
-conversao(pontos)
-pain = paineis(pontos)
-# print('paineis:', pain)
-areaPainel(pain)
+# grafico_X_Y()
+# grafico_Z_Y()

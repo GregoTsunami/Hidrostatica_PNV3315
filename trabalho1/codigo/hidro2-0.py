@@ -1,5 +1,4 @@
 import pandas as pd
-import copy
 import numpy as np
 from math import sqrt
 import matplotlib.pyplot as plt
@@ -93,25 +92,10 @@ def plot_calxwl(z,y, k):
 #################################################
 ##################################################
 #converte o sistema de coordenadas
-def conversao(paineis):
-    paineis_new = []
-    for i in range (0, len(paineis)):
-        paineis_new = copy.deepcopy(paineis[i])
-        paineis_new[1][0] = paineis_new[1][0] - (x_spl[-1]/2)
-        paineis_new[2][0] = paineis_new[2][0] - (x_spl[-1]/2)
-        paineis_new[3][0] = paineis_new[3][0] - (x_spl[-1]/2)
-        paineis_new[4][0] = paineis_new[4][0] - (x_spl[-1]/2)
-        paineis[i] = copy.deepcopy(paineis_new)
-    for i in range (0, len(paineis)):
-        paineis_new = copy.deepcopy(paineis[i])
-        paineis_new[1][1] = paineis_new[1][1] *-1
-        paineis_new[2][1] = paineis_new[2][1] *-1
-        paineis_new[3][1] = paineis_new[3][1] *-1
-        paineis_new[4][1] = paineis_new[4][1] *-1
-        paineis.append(copy.deepcopy(paineis_new))
-
-    return paineis
-
+def conversao(pontos):
+    for i in range (0, len(pontos)):
+        pontos[i][0] = pontos [i][0] - (x_spl[-1]/2)
+        #pontos[i][2] = pontos [i][2] - (z_spl[-1])
 ###################################################
 def paineis(pontos):
     paineis = []
@@ -129,51 +113,10 @@ def paineis(pontos):
     for k in range (0, len(pontos)):
         if pontos[k][0] == (guarda4 [0]) and pontos[k][2] == (guarda2[2]):
             guarda3 = pontos[k]
-    paineis = [[0, guarda1, guarda2, guarda3, guarda4]]
-    #
-    guarda2 = guarda1 = guarda3 = guarda4 = [0,0,0]
+    paineis = [guarda1, guarda2, guarda3, guarda4]
 
-    guarda2 = paineis [0][1]
-    guarda3 = paineis [0][4]
-    j = 1
-    for i in range(2, len(z_spl)):
-        for k in range (0, len(pontos)):
-            if splines == 0 and pontos[k][0] == guarda2 [0] and pontos[k][2] == wl[i]:
-                guarda1 = pontos[k]
-            elif pontos[k][0] == guarda2 [0] and pontos[k][2] == (i*((wl[2]-wl[1])/splines)):
-                guarda1 = pontos[k]
-            if splines == 0 and pontos[k][0] == guarda3 [0] and pontos[k][2] == wl[i]:
-                guarda4 = pontos[k]
-            elif pontos[k][0] == guarda3 [0] and pontos[k][2] == (i*((wl[2]-wl[1])/splines)):
-                guarda4 = pontos[k]
-        paineis.append([j, guarda1, guarda2, guarda3, guarda4])
-        guarda2 = paineis [j][1]
-        guarda3 = paineis [j][4]
-        j += 1
-    #
-    guarda2 = guarda1 = guarda3 = guarda4 = [0,0,0]
-
-    guarda2 = paineis[0][3]
-    guarda1 = paineis[0][4]
-    for i in range (1,len(z_spl)):
-        for l in range(2, len(x_spl)):
-            for k in range (0, len(pontos)):
-                if splines == 0 and pontos[k][0] == x[l] and pontos[k][2] == guarda2[2]:
-                    guarda3 = pontos[k]
-                elif pontos[k][0] == (l*((x[2]-x[1])/splines)) and pontos[k][2] == (guarda2[2]):
-                    guarda3 = pontos[k]
-                if splines == 0 and pontos[k][0] == x[l] and pontos[k][2] == wl[i]:
-                    guarda4 = pontos[k]
-                elif pontos[k][0] == (l*((x[2]-x[1])/splines)) and pontos[k][2] == (guarda1[2]):
-                    guarda4 = pontos[k]
-            paineis.append([j, guarda1, guarda2, guarda3, guarda4])
-            guarda2 = paineis [j][3]
-            guarda1 = paineis [j][4]
-            j += 1
-        guarda2 = paineis[i][3]
-        guarda1 = paineis[i][4]
     return paineis
-#####################################################
+###################################################
 def organiza(pontos):
     bckp_pontos = pontos.copy()
     pontos.clear()
@@ -298,258 +241,153 @@ def splcubic(x,y,x_spl):
 
     return y_spl
 
+##############################################
+def areaPainel(pain): #calcula area dos paineis e seu modulo
+    # print('seu painel e os pontos são: ', pain)
+    p1 = pain[0]
+    p2 = pain[1]
+    p3 = pain[2]
+    p4 = pain[3]
 
-#####################################################
-def areaPainel(vetor): #calcula area dos paineis e seu modulo    
-    p1 = vetor[0]
-    p2 = vetor[1]
-    p3 = vetor[2]
-    p4 = vetor[3]
     v1 = np.array(p2) - np.array(p1)
     v2 = np.array(p4) - np.array(p1)
     v3 = np.array(p4) - np.array(p3)
     v4 = np.array(p2) - np.array(p3)
-        #faz a multiplicação vetorial
+    #faz a multiplicação vetorial
     mv1 = np.cross(v1, v2)
     mv2 = np.cross(v3, v4)
-        #calculo do vetor área
+    #calculo do vetor área
     area = (mv1 + mv2)/2
-    #print('Area do painel: ', area)
+    print('Area do painel: ', area)
     return area
 
 def modPainel(area):
     #tira o módulo da área
     modArea = np.linalg.norm(area)
-    #print('Módulo da Area: ', modArea)
+    print('Módulo da Area: ', modArea)
     return modArea
 
 def Sw(modArea):
     sw = modArea
-    #print('Sw = ', sw)
+    print('Sw = ', sw)
     return sw 
 
 def Awl(area):
     awl = -1*area[2]
-    #print('Awl = ', awl)
+    print('Awl = ', awl)
     return awl
 
-def Centros(vetor):
-    #print('vetor', vetor)
-    Cx1, Cy1, Cz1 = vetor[0]
-    Cx2, Cy2, Cz2 = vetor[2]
+def Centros(pain):
+    Cx1, Cy1, Cz1 = pain[0]
+    Cx2, Cy2, Cz2 = pain[2]
     
     Cx = (Cx1+Cx2)/2
     Cy = (Cy1+Cy2)/2
     Cz = (Cz1+Cz2)/2
     centro = [Cx, Cy, Cz]
-    #print('Coord do Centro do painel: ', centro)
+    print('Coord do Centro do painel: ', centro)
     return centro
 
 def Vol(area, centro):
     vol = abs(((area[0]*centro[0])+(area[1]*centro[1])+(area[2]*centro[2]))/3)
-    #print('Volume dá: ', vol)
+    print('Volume dá: ', vol)
     return vol
 
 def LCF(awl, centro):
     lcf = (awl*centro[0])/awl
-    #print('LCF = ', lcf)
+    print('LCF = ', lcf)
     return lcf
 
 def TCF(awl, centro):
     tcf = (awl*centro[1])/awl
-    #print('TCF = ', tcf)
+    print('TCF = ', tcf)
     return tcf
 
 def IL(awl, centro, tcf):
     il = (awl*(centro[0]-tcf)**2)
-    #print('IL = ', il)
+    print('IL = ', il)
     return il
 
 def IT(awl, centro, lcf):
     it = (awl*(centro[1]-lcf)**2)
-    #print('IT = ', it)
+    print('IT = ', it)
     return it
 
 def LCB(area, centro, volume):
     lcb = ((area[0]*centro[0])*(centro[0]/2))/volume
-    #print('LCB = ', lcb)
+    print('LCB = ', lcb)
     return lcb
 
 def TCB(area, centro, volume):
     tcb = ((area[1]*centro[1])*(centro[1]/2))/volume
-    #print('TCB = ', tcb)
+    print('TCB = ', tcb)
     return tcb
 
 def KB(area, centro, volume):
     kb = ((area[2]*centro[2])*(centro[2]/2))/volume
-    #print('KB = ', kb)
+    print('KB = ', kb)
     return kb
 
 def BML(il, volume):
     bml = (il/volume)
-    #print('BML = ', bml)
+    print('BML = ', bml)
     return bml
 
 def BMT(it, volume):
     bmt = (it/volume)
-    #print('BMT = ', bmt)
+    print('BMT = ', bmt)
     return bmt
+
 #####################################################
 splines = int(input("digite o valor de pontos entre balizas desejado: "))
 print("\nx:", x)
-if splines == 0:
-    splines = 1
 x_spl = np.array(spline_x(splines))
 z_spl = np.array(spline_z(splines))
-n = 0
-m = 0
 #pega todas as meia-bocas de todas Balizas interpoladas
-for k in np.arange(0, z_spl[-1]+(z_spl[1]/2), z_spl[1]):
-    y = ct[n].values #une os dados num vetor
-    #print("\ny:", y)
-    #print("\nPara linha d'agua: ", k)
-    y_spl = splcubic(x,y, x_spl)
-    #print('\ny_spl', y_spl)
-    for i in range(0, len(x_spl)):
-        if [x_spl[i],y_spl[i],z_spl[m]] != pontos[i]:
-            pontos.append([x_spl[i],y_spl[i],z_spl[m]])
-    n += 1
-    m += 1
-    if n == len(wl):
-        n = 0
-    if m ==len(z_spl):
-        m = 0
-#print('\nx_spl', x_spl)
+for z in z_spl:
+    n = 0
+    m = 0
+    pontos = []
+    for k in np.arange(0, z_spl[-1]+(z_spl[1]/2), z_spl[1]):
+        y = ct[n].values #une os dados num vetor
+        print("\ny:", y)
+        print("\nPara linha d'agua: ", k)
+        y_spl = splcubic(x,y, x_spl)
+        print('\ny_spl', y_spl)
+        for i in range(0, len(x_spl)):
+            # if [x_spl[i], y_spl[i], z] != pontos[i]:
+            # pontos.append([x_spl[i], y_spl[i], z])
+            novo_ponto = [x_spl[i], y_spl[i], z_spl[m]]  # Criar novo ponto
+            if novo_ponto not in pontos:  # Verificar se o ponto já existe
+                pontos.append(novo_ponto)  # Adicionar o ponto se não existir
+        n += 1
+        m += 1
+        if n == len(wl):
+            n = 0
+        if m ==len(z_spl):
+            m = 0
+    print('\nx_spl', x_spl)
+    #pontos.pop(0)    
+    conversao(pontos)
+    pain = paineis(pontos)
+    print('Coords do painel', pain)
+    area = areaPainel(pain)
+    modArea = modPainel(area)
+    centro = Centros(pain)
+    volume = Vol(area, centro)
+    sw = Sw(area)
+    awl = Awl(area)
+    lcf = LCF(awl, centro)
+    tcf = TCF(awl, centro)
+    il = IL(awl, centro, tcf)
+    it = IT(awl, centro, lcf)
+    lcb = LCB(area, centro, volume)
+    tcb = TCB(area, centro, volume)
+    kb = KB(area, centro, volume)
+    bml = BML(il, volume)
+    bmt = BMT(it, volume)
+    
+    
 
-pontos.pop(0)
 grafico_X_Y()
 grafico_Z_Y()
-pain  = paineis(pontos)
-pain = conversao(pain)
-for i, painel in enumerate(pain):
-    somawl = 0
-    somsw = 0
-    somawl = 0
-    somlcf = 0
-    somtcf = 0
-    somil = 0
-    somit = 0
-    somlcb = 0
-    somtcb = 0
-    somkb = 0
-    sombml = 0
-    sombmt = 0
-    paindiv = []
-    lcfs = []
-    tcfs = []
-    ils = []
-    its = []
-    lcbs = []
-    tcbs = []
-    kbs = []
-    bmls = []
-    bmts = []
-    for vetor in pain:
-        paindiv.append(vetor[:])
-    for vetor in paindiv:
-        vetor.pop(0)
-        #print('painel por WL: ',vetor) 
-        area = areaPainel(vetor)
-        modArea = modPainel(area)
-        centro = Centros(vetor)
-        volume = Vol(area, centro)
-        sw = modPainel(area)
-        awl = Awl(area)
-        somawl += awl
-        lcf = LCF(somawl, centro)
-        tcf = TCF(somawl, centro)
-        il = IL(somawl, centro, tcf)
-        it = IT(somawl, centro, lcf)
-        lcb = LCB(area, centro, volume)
-        tcb = TCB(area, centro, volume)
-        kb = KB(area, centro, volume)
-        bml = BML(il, volume)
-        bmt = BMT(it, volume)
-for z in z_spl:
-    somlcf += lcf
-    lcfs.append(abs(somlcf))
-    somtcf += tcf
-    tcfs.append(abs(somtcf))
-    somil += il
-    ils.append(abs(somil))
-    somit += it
-    its.append(abs(somit))
-    somlcb += lcb
-    lcbs.append(abs(somlcb))
-    somtcb += tcb
-    tcbs.append(abs(somtcb))
-    somkb += kb
-    kbs.append(abs(somkb))
-    sombml += bml
-    bmls.append(abs(sombml))
-    sombmt += bmt
-    bmts.append(abs(sombmt))
-    
-        
-plt.plot(lcfs, z_spl)
-plt.scatter(lcfs, z_spl)
-plt.grid()
-plt.xlabel('LCF')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(tcfs, z_spl)
-plt.scatter(tcfs, z_spl)
-plt.grid()
-plt.xlabel('TCF')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(ils, z_spl)
-plt.scatter(ils, z_spl)
-plt.grid()
-plt.xlabel('IL')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(its, z_spl)
-plt.scatter(its, z_spl)
-plt.grid()
-plt.xlabel('IT')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(lcbs, z_spl)
-plt.scatter(lcbs, z_spl)
-plt.grid()
-plt.xlabel('LCB')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(tcbs, z_spl)
-plt.scatter(tcbs, z_spl)
-plt.grid()
-plt.xlabel('TCB')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(kbs, z_spl)
-plt.scatter(kbs, z_spl)
-plt.grid()
-plt.xlabel('KB')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(bmls, z_spl)
-plt.scatter(bmls, z_spl)
-plt.grid()
-plt.xlabel('BML')
-plt.ylabel('WL')
-plt.show()
-
-plt.plot(bmts, z_spl)
-plt.scatter(bmts, z_spl)
-plt.grid()
-plt.xlabel('BMT')
-plt.ylabel('WL')
-plt.show()

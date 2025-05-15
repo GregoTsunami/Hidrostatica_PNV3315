@@ -43,8 +43,10 @@ def main():
         res = calcular_propriedades(paineis, x_spl, z_spl, pontos, d)
         all_results.append(res)
     
-    # Gera os novos gráficos hidrostáticos
+    # Gera os gráficos hidrostáticos
     plot_hidrostatic_properties(all_drafts, all_results)
+    
+    plot_all_hidrostatic_curves(all_drafts, all_results)
 
 def gerar_graficos(x, wl, ct):
     plt.figure(figsize=(14, 6))
@@ -155,23 +157,26 @@ def calcular_propriedades(paineis, x_spl, z_spl, pontos, draft):
         'IL': 0.0,
         'BMt': 0.0,
         'BMl': 0.0,
-        #'Cb': 0.0,
         'KMt': 0.0,
         'KMl': 0.0
     }
 
-    
     volume_total = 0.0
     mom_x = 0.0
-    mom_y = 0.0
     mom_z = 0.0
-    
+    area_total = 0.0
+    mom_lcf = 0.0
+    It = 0.0
+    Il = 0.0
+
+    # Cálculo do Volume e KB
     for i in range(len(x_spl)-1):
         dx = x_spl[i+1] - x_spl[i]
         x_centro = (x_spl[i] + x_spl[i+1])/2
         
         for j in range(len(z_spl)-1):
-            if z_spl[j+1] > draft: continue
+            if z_spl[j+1] > draft:
+                continue
             
             dz = z_spl[j+1] - z_spl[j]
             z_centro = (z_spl[j] + z_spl[j+1])/2
@@ -180,23 +185,13 @@ def calcular_propriedades(paineis, x_spl, z_spl, pontos, draft):
             y2 = next(p[1] for p in pontos if p[0] == x_spl[i+1] and p[2] == z_spl[j])
             y_avg = (y1 + y2)/2
             
-            area_painel = y_avg * dx
-            volume_painel = area_painel * dz * 2
+            volume_painel = y_avg * dx * dz * 2  # Volume para ambos os lados
             
             volume_total += volume_painel
             mom_x += volume_painel * x_centro
-            mom_y += volume_painel * y_avg
             mom_z += volume_painel * z_centro
-    
-    if volume_total > 0:
-        resultados['Volume moldado'] = volume_total
-        resultados['LCB'] = mom_x / volume_total
-        resultados['TCB'] = mom_y / volume_total
-        resultados['KB'] = mom_z / volume_total
-    
-    area_total = 0.0
-    mom_lcf = 0.0
-    
+
+    # Cálculo da Área de Flutuação e LCF
     for i in range(len(x_spl)-1):
         dx = x_spl[i+1] - x_spl[i]
         x_centro = (x_spl[i] + x_spl[i+1])/2
@@ -207,41 +202,45 @@ def calcular_propriedades(paineis, x_spl, z_spl, pontos, draft):
         except StopIteration:
             continue
         
-        area_segment = (y1 + y2) * dx / 2
+        y_avg = (y1 + y2)/2
+        area_segment = y_avg * dx * 2  # Área total (dois lados)
         area_total += area_segment
         mom_lcf += x_centro * area_segment
-    
-    resultados['Área flutuação'] = area_total * 2
+        
+        # Cálculo de It (Momento de Inércia Transversal)
+        It += (y_avg**3) * dx * 2 / 3  # Integral de y³ dx * 2 lados
+
+    # Atualiza LCF para uso no cálculo do IL
     if area_total > 0:
+        resultados['Área flutuação'] = area_total
         resultados['LCF'] = mom_lcf / area_total
-    
-    It = 0.0
-    Il = 0.0
-    
+
+    # Cálculo do IL (Momento de Inércia Longitudinal)
+    lcf = resultados['LCF']
     for i in range(len(x_spl)-1):
         dx = x_spl[i+1] - x_spl[i]
         x_centro = (x_spl[i] + x_spl[i+1])/2
         
-        for j in range(len(z_spl)-1):
-            if z_spl[j+1] > draft: continue
-            
-            dz = z_spl[j+1] - z_spl[j]
-            
-            y1 = next(p[1] for p in pontos if p[0] == x_spl[i] and p[2] == z_spl[j])
-            y2 = next(p[1] for p in pontos if p[0] == x_spl[i+1] and p[2] == z_spl[j])
-            y_avg = (y1 + y2)/2
-            
-            It += (dx * (2*y_avg)**3) / 12 * dz + (dx * dz) * (2*y_avg) * (y_avg)**2
-            Il += (dz * dx**3) / 12 * (2*y_avg) + (dx * dz * 2*y_avg) * (x_centro - resultados['LCF'])**2
-    
-    resultados['It'] = It
-    resultados['IL'] = Il
-    
-    # if T > 0 and Lpp > 0 and B > 0:
-    #     resultados['Cb'] = volume_total / (Lpp * B * T)
-    
-    # BM_T e BM_L
+        try:
+            y1 = next(p[1] for p in pontos if p[0] == x_spl[i] and abs(p[2] - draft) < 1e-3)
+            y2 = next(p[1] for p in pontos if p[0] == x_spl[i+1] and abs(p[2] - draft) < 1e-3)
+        except StopIteration:
+            continue
+        
+        y_avg = (y1 + y2)/2
+        area_segment = y_avg * dx * 2  # Área total (dois lados)
+        
+        # Integral de (x - LCF)² * dA
+        Il += (x_centro - lcf)**2 * area_segment
+
+    # Atribuição final dos resultados
     if volume_total > 0:
+        resultados['Volume moldado'] = volume_total
+        resultados['LCB'] = mom_x / volume_total
+        resultados['KB'] = mom_z / volume_total
+        
+        resultados['It'] = It
+        resultados['IL'] = Il
         resultados['BMt'] = It / volume_total
         resultados['BMl'] = Il / volume_total
         resultados['KMt'] = resultados['KB'] + resultados['BMt']
@@ -285,6 +284,35 @@ def plot_hidrostatic_properties(drafts, results):
         
         plt.tight_layout()
         plt.show()
+
+def plot_all_hidrostatic_curves(drafts: List[float], all_results: List[Dict[str, float]]):
+    propriedades = list(all_results[0].keys())
+    cores = plt.cm.tab10(np.linspace(0, 1, len(propriedades)))  # Paleta de cores
+    
+    plt.figure(figsize=(12, 8))
+    
+    for i, prop in enumerate(propriedades):
+        valores = [res[prop] for res in all_results]
+        
+        # Filtrar valores válidos
+        drafts_validos = []
+        valores_validos = []
+        for d, v in zip(drafts, valores):
+            if not (np.isnan(v) or np.isinf(v)) and v != 0:
+                drafts_validos.append(d)
+                valores_validos.append(v)
+        
+        if len(drafts_validos) > 0:
+            plt.plot(drafts_validos, valores_validos, 
+                     label=prop, color=cores[i], linewidth=2)
+
+    plt.title('Curvas Hidrostáticas', fontsize=14)
+    plt.xlabel('Calado (m)', fontsize=12)
+    plt.ylabel('Valores', fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')  # Legenda fora do gráfico
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()

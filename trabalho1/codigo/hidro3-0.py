@@ -17,7 +17,7 @@ def main():
     splines = int(input("Pontos entre balizas (0 para originais): "))
     draft = float(input("Calado de operação (m): "))
     
-    # Gera pontos interpolados
+    # Gera pontos interpolados com spline cúbica
     x_spl = spline_x(x, splines)
     z_spl = spline_z(wl, splines)
 
@@ -45,8 +45,80 @@ def main():
     
     # Gera os gráficos hidrostáticos
     plot_hidrostatic_properties(all_drafts, all_results)
-    
     plot_all_hidrostatic_curves(all_drafts, all_results)
+
+def spline_x(x: npt.NDArray[np.float64], splines: int) -> npt.NDArray[np.float64]:
+    if splines == 0:
+        return x.copy()
+    
+    # Cria parâmetro t baseado nos índices
+    t_original = np.arange(len(x))
+    # Gera novos pontos t com densidade aumentada
+    total_points = (len(x) - 1) * (splines + 1) + 1
+    t_new = np.linspace(0, len(x)-1, total_points)
+    # Aplica spline cúbica
+    return cubic_spline(t_original, x, t_new)
+
+def spline_z(wl: npt.NDArray[np.float64], splines: int) -> npt.NDArray[np.float64]:
+    if splines == 0:
+        return wl.copy()
+    
+    # Mesma lógica para linhas d'água
+    t_original = np.arange(len(wl))
+    total_points = (len(wl) - 1) * (splines + 1) + 1
+    t_new = np.linspace(0, len(wl)-1, total_points)
+    return cubic_spline(t_original, wl, t_new)
+
+def cubic_spline(x: npt.NDArray[np.float64], y: npt.NDArray[np.float64], 
+                x_new: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """Implementação robusta de spline cúbica natural com verificação de dados"""
+    # Verifica dados duplicados
+    unique_x, indices = np.unique(x, return_index=True)
+    if len(unique_x) < 2:
+        return np.interp(x_new, x, y)
+    
+    # Garante ordenação
+    sort_idx = np.argsort(unique_x)
+    unique_x = unique_x[sort_idx]
+    unique_y = y[indices][sort_idx]
+    
+    n = len(unique_x)
+    h = np.diff(unique_x)
+    a = unique_y
+    
+    # Sistema tridiagonal
+    A = np.zeros((n, n))
+    B = np.zeros(n)
+    
+    # Condições de contorno naturais
+    A[0, 0] = 1
+    A[-1, -1] = 1
+    
+    for i in range(1, n-1):
+        A[i, i-1] = h[i-1]
+        A[i, i] = 2*(h[i-1] + h[i])
+        A[i, i+1] = h[i]
+        B[i] = 3*((a[i+1] - a[i])/h[i] - (a[i] - a[i-1])/h[i-1])
+    
+    try:
+        c = np.linalg.solve(A, B)
+    except np.linalg.LinAlgError:
+        return np.interp(x_new, x, y)
+    
+    # Coeficientes
+    b = np.zeros(n-1)
+    d = np.zeros(n-1)
+    for i in range(n-1):
+        b[i] = (a[i+1] - a[i])/h[i] - h[i]*(2*c[i] + c[i+1])/3
+        d[i] = (c[i+1] - c[i])/(3*h[i])
+    
+    # Avaliação
+    y_new = np.zeros_like(x_new)
+    for i, xi in enumerate(x_new):
+        idx = min(np.searchsorted(unique_x, xi) - 1, n-2)
+        dx = xi - unique_x[idx]
+        y_new[i] = a[idx] + b[idx]*dx + c[idx]*dx**2 + d[idx]*dx**3
+    return y_new
 
 def gerar_graficos(x, wl, ct):
     plt.figure(figsize=(14, 6))
@@ -75,28 +147,6 @@ def gerar_graficos(x, wl, ct):
     
     plt.tight_layout()
     plt.show()
-
-def spline_x(x: npt.NDArray[np.float64], splines: int) -> npt.NDArray[np.float64]:
-    if splines == 0:
-        return x.copy()
-    
-    new_x = []
-    for i in range(len(x)-1):
-        segment = np.linspace(x[i], x[i+1], splines+2)
-        new_x.extend(segment[:-1])
-    new_x.append(x[-1])
-    return np.array(new_x)
-
-def spline_z(wl: npt.NDArray[np.float64], splines: int) -> npt.NDArray[np.float64]:
-    if splines == 0:
-        return wl.copy()
-    
-    new_z = []
-    for i in range(len(wl)-1):
-        segment = np.linspace(wl[i], wl[i+1], splines+2)
-        new_z.extend(segment[:-1])
-    new_z.append(wl[-1])
-    return np.array(new_z)
 
 def gerar_pontos_casco(x, wl, ct, x_spl, z_spl):
     pontos = []
